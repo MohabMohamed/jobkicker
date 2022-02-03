@@ -1,0 +1,13 @@
+hooks:
+  # hook scripts
+  pre-commit:
+    - golangci-lint run
+    - husky lint-staged
+    - go test
+
+# list staged files do some pre-process and git add
+lint-staged:
+  "*.go":
+    - goimports -l -w
+    - gofmt -l -w
+    - git add
