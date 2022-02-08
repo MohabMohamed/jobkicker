@@ -49,9 +49,10 @@ func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 	for idx, param := range job.Args {
 		params[idx] = reflect.ValueOf(param)
 	}
+	waiter := job.Timer.GetWaiter()
 	for {
 		select {
-		case <-job.Timer.GetWaiter():
+		case <-waiter:
 			fn.Call(params)
 			jobKicker.jobQueue.Lock()
 			if job.JobType == Once {
@@ -83,7 +84,7 @@ func (jobKicker *JobKicker) CancelJob(jobId string) error {
 	if job, ok := jobKicker.jobQueue.PendingJobs[jobId]; ok {
 		jobType = job.JobType
 	}
-	
+
 	if doneTime, ok := jobKicker.jobQueue.DoneJobs[jobId]; ok && jobType == Once {
 
 		err := fmt.Errorf(
@@ -136,6 +137,27 @@ func (jobKicker *JobKicker) KickOnceAt(runAt time.Time, fn interface{}, args ...
 		Fn:         fn,
 		Args:       args,
 		Timer:      timer,
+		cxt:        context,
+		cancelFunc: cancelFunc,
+	}
+	jobKicker.jobQueue.Lock()
+	jobKicker.jobQueue.PendingJobs[jobID] = job
+	jobKicker.jobQueue.Unlock()
+
+	go jobKicker.runJob(job, jobID)
+	return
+}
+
+func (jobKicker *JobKicker) KickPeriodicallyEvery(delay time.Time, fn interface{}, args ...interface{}) (jobID string) {
+	jobID = uuid.New().String()
+	delayDuration := delayToDuration(delay)
+	ticker := InitiateNewKickerTicker(delayDuration)
+	context, cancelFunc := context.WithCancel(context.Background())
+	job := &Job{
+		JobType:    Periodically,
+		Fn:         fn,
+		Args:       args,
+		Timer:      ticker,
 		cxt:        context,
 		cancelFunc: cancelFunc,
 	}
