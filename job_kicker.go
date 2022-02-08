@@ -117,6 +117,26 @@ func (jobKicker *JobKicker) KickOnceAfter(delay time.Time, fn interface{}, args 
 	jobKicker.jobQueue.Unlock()
 
 	go jobKicker.runJob(job, jobID)
+	return
+}
 
-	return jobID
+func (jobKicker *JobKicker) KickOnceAt(runAt time.Time, fn interface{}, args ...interface{}) (jobID string) {
+	jobID = uuid.New().String()
+	duration := time.Until(runAt)
+	timer := InitiateNewKickerTimer(duration)
+	context, cancelFunc := context.WithCancel(context.Background())
+	job := &Job{
+		JobType:    Once,
+		Fn:         fn,
+		Args:       args,
+		Timer:      timer,
+		cxt:        context,
+		cancelFunc: cancelFunc,
+	}
+	jobKicker.jobQueue.Lock()
+	jobKicker.jobQueue.PendingJobs[jobID] = job
+	jobKicker.jobQueue.Unlock()
+
+	go jobKicker.runJob(job, jobID)
+	return
 }
