@@ -78,7 +78,13 @@ func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 func (jobKicker *JobKicker) CancelJob(jobId string) error {
 	jobKicker.jobQueue.Lock()
 	defer jobKicker.jobQueue.Unlock()
-	if doneTime, ok := jobKicker.jobQueue.DoneJobs[jobId]; ok {
+
+	jobType := Once
+	if job, ok := jobKicker.jobQueue.PendingJobs[jobId]; ok {
+		jobType = job.JobType
+	}
+	
+	if doneTime, ok := jobKicker.jobQueue.DoneJobs[jobId]; ok && jobType == Once {
 
 		err := fmt.Errorf(
 			"Job with id [%s] can't be cancelled because it's already executed at %v",
