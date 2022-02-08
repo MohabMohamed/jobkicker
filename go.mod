@@ -1,4 +1,4 @@
-module jobkicker
+module github.com/MohabMohamed/jobkicker
 
 go 1.17
 
