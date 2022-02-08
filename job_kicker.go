@@ -101,8 +101,8 @@ func (jobKicker *JobKicker) CancelJob(jobId string) error {
 
 func (jobKicker *JobKicker) KickOnceAfter(delay time.Time, fn interface{}, args ...interface{}) (jobID string) {
 	jobID = uuid.New().String()
-	var timer *KickerTimer
-	timer.InitiateNew(time.Duration(delay.Nanosecond()))
+	delayDuration := delayToDuration(delay)
+	timer := InitiateNewKickerTimer(delayDuration)
 	context, cancelFunc := context.WithCancel(context.Background())
 	job := &Job{
 		JobType:    Once,
