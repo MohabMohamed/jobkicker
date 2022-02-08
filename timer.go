@@ -5,7 +5,6 @@ import "time"
 type ITimer interface {
 	Stop()
 	GetWaiter() <-chan time.Time
-	InitiateNew(d time.Duration)
 }
 
 type KickerTimer struct {
@@ -23,8 +22,8 @@ func (kickerTimer *KickerTimer) GetWaiter() <-chan time.Time {
 	return kickerTimer.Timer.C
 }
 
-func (kickerTimer *KickerTimer) InitiateNew(d time.Duration) {
-	kickerTimer.Timer = time.NewTimer(d)
+func InitiateNewKickerTimer(d time.Duration) *KickerTimer {
+	return &KickerTimer{Timer: time.NewTimer(d)}
 }
 
 func (kickerTicker *KickerTicker) Stop() {
@@ -35,6 +34,6 @@ func (kickerTicker *KickerTicker) GetWaiter() <-chan time.Time {
 	return kickerTicker.Ticker.C
 }
 
-func (kickerTicker *KickerTicker) InitiateNew(d time.Duration) {
-	kickerTicker.Ticker = time.NewTicker(d)
+func InitiateNewKickerTicker(d time.Duration) *KickerTicker {
+	return &KickerTicker{Ticker: time.NewTicker(d)}
 }
