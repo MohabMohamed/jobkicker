@@ -1,3 +1,5 @@
+// jobkicker is A Golang in-process cron task scheduler that kicks (executes)
+// them once in specified time or periodically.
 package jobkicker
 
 import (
@@ -16,6 +18,20 @@ type JobKicker struct {
 	logger   *log.Logger
 }
 
+// NewScheduler generates new JobKicker (scheduler) and enables to configure the logger.
+//
+// by passing `loggerOutput *io.Writer` like a file or any thing implements io.Writer
+// to write the logs to. if nil passed it's write to `os.Stderr`
+//
+// by passing `loggerFormatter *log.Formatter` it allows to format the logs before logging it
+// by passing any struct implements the interface:
+//  type Formatter interface {
+//  	Format(*Entry) ([]byte, error)
+//  }
+//
+// https://github.com/sirupsen/logrus used for logging so you can try to pass `&log.JSONFormatter{}`
+// for example to format the logs as json.
+// and if nil is passed it will use `logrus.TextFormatter` by default.
 func NewScheduler(loggerOutput *io.Writer, loggerFormatter *log.Formatter) *JobKicker {
 	jobKicker := &JobKicker{
 		jobQueue: &JobQueue{
@@ -33,6 +49,11 @@ func NewScheduler(loggerOutput *io.Writer, loggerFormatter *log.Formatter) *JobK
 	return jobKicker
 }
 
+// runJob excutes the job and removes it after running from the pendingjobs map
+// if it should only run once or if it got canceled. and it saves the last time
+// job ran in the doneJobs map
+//
+// it takes the job that it should run with it's id.
 func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 	jobKicker.jobQueue.Lock()
 	if doneTime, ok := jobKicker.jobQueue.DoneJobs[jobId]; ok {
@@ -76,6 +97,7 @@ func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 	}
 }
 
+// CancelJob cancels a job with it's id by using a cancel context that the job struct holds
 func (jobKicker *JobKicker) CancelJob(jobId string) error {
 	jobKicker.jobQueue.Lock()
 	defer jobKicker.jobQueue.Unlock()
@@ -106,6 +128,8 @@ func (jobKicker *JobKicker) CancelJob(jobId string) error {
 
 }
 
+// KickOnceAfter excutes a function once after a delay and returns the job id like:
+
 func (jobKicker *JobKicker) KickOnceAfter(delay time.Time, fn interface{}, args ...interface{}) (jobID string) {
 	jobID = uuid.New().String()
 	delayDuration := delayToDuration(delay)
@@ -127,6 +151,7 @@ func (jobKicker *JobKicker) KickOnceAfter(delay time.Time, fn interface{}, args 
 	return
 }
 
+// KickOnceAt excutes a function once at a certain time and returns the job id
 func (jobKicker *JobKicker) KickOnceAt(runAt time.Time, fn interface{}, args ...interface{}) (jobID string) {
 	jobID = uuid.New().String()
 	duration := time.Until(runAt)
@@ -148,6 +173,7 @@ func (jobKicker *JobKicker) KickOnceAt(runAt time.Time, fn interface{}, args ...
 	return
 }
 
+// KickPeriodicallyEvery excutes a function Periodically with the passed interval between every execution and returns the job id
 func (jobKicker *JobKicker) KickPeriodicallyEvery(delay time.Time, fn interface{}, args ...interface{}) (jobID string) {
 	jobID = uuid.New().String()
 	delayDuration := delayToDuration(delay)
