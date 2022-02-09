@@ -1,12 +1,17 @@
 package jobkicker
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
 
 func testingTask1() {
 	println("Hello from job 1")
+}
+
+func testingTaskWithParams(name string, age int) {
+	fmt.Printf("hello %s, your age is %d\n", name, age)
 }
 
 func TestNewScheduler(t *testing.T) {
@@ -154,4 +159,35 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 
 	t.Log("finishing scheduled job passed")
 
+}
+
+func TestKickWithParams(t *testing.T) {
+	jk := NewScheduler(nil, nil)
+
+	delay := time.Date(0, 0, 0, 0, 0, 3, 0, time.UTC)
+	jk.KickOnceAfter(delay, testingTaskWithParams, "Mohab", 25)
+	jk.jobQueue.Lock()
+	pendingJobsSize := len(jk.jobQueue.PendingJobs)
+	doneJobsSize := len(jk.jobQueue.DoneJobs)
+	if pendingJobsSize != 1 {
+		t.Errorf("jobkicker's pendingjobs should have size %d but found it's size %d", 1, pendingJobsSize)
+	}
+	if doneJobsSize != 0 {
+		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 0, doneJobsSize)
+	}
+	jk.jobQueue.Unlock()
+	t.Log("scheduling new job with arguments passed")
+
+	time.Sleep(4 * time.Second)
+	jk.jobQueue.Lock()
+	pendingJobsSize = len(jk.jobQueue.PendingJobs)
+	doneJobsSize = len(jk.jobQueue.DoneJobs)
+	if pendingJobsSize != 0 {
+		t.Errorf("jobkicker's pendingjobs should have size %d but found it's size %d", 0, pendingJobsSize)
+	}
+	if doneJobsSize != 1 {
+		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
+	}
+	jk.jobQueue.Unlock()
+	t.Log("finishing scheduled job passed")
 }
