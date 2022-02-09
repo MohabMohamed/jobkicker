@@ -30,7 +30,7 @@ type Job struct {
 // Note: periodic jobs stays in PendingJobs map after execution unless got canceled and Done
 // jobs in this case holds the last execution time.
 type JobQueue struct {
-	sync.Mutex
+	sync.RWMutex
 	PendingJobs map[string]*Job
 	DoneJobs    map[string]time.Time //Done jobs with it's last execution time
 }

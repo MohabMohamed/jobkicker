@@ -55,7 +55,7 @@ func NewScheduler(loggerOutput *io.Writer, loggerFormatter *log.Formatter) *JobK
 //
 // it takes the job that it should run with it's id.
 func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
-	jobKicker.jobQueue.Lock()
+	jobKicker.jobQueue.RLock()
 	if doneTime, ok := jobKicker.jobQueue.DoneJobs[jobId]; ok {
 		jobKicker.logger.Errorf("Job with id [%s] already executed at %v", jobId, doneTime)
 	}
@@ -64,7 +64,7 @@ func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 	if _, ok := jobKicker.jobQueue.PendingJobs[jobId]; !ok {
 		jobKicker.logger.Errorf("Job with id [%s] isn't scheduled", jobId)
 	}
-	jobKicker.jobQueue.Unlock()
+	jobKicker.jobQueue.RUnlock()
 	fn := reflect.ValueOf(job.Fn)
 	params := make([]reflect.Value, len(job.Args))
 	for idx, param := range job.Args {
@@ -99,8 +99,8 @@ func (jobKicker *JobKicker) runJob(job *Job, jobId string) {
 
 // CancelJob cancels a job with it's id by using a cancel context that the job struct holds
 func (jobKicker *JobKicker) CancelJob(jobId string) error {
-	jobKicker.jobQueue.Lock()
-	defer jobKicker.jobQueue.Unlock()
+	jobKicker.jobQueue.RLock()
+	defer jobKicker.jobQueue.RUnlock()
 
 	jobType := Once
 	if job, ok := jobKicker.jobQueue.PendingJobs[jobId]; ok {

@@ -16,7 +16,7 @@ func testingTaskWithParams(name string, age int) {
 
 func TestNewScheduler(t *testing.T) {
 	jk := NewScheduler(nil, nil)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize := len(jk.jobQueue.PendingJobs)
 	doneJobsSize := len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 0 {
@@ -27,14 +27,14 @@ func TestNewScheduler(t *testing.T) {
 	}
 	t.Log("newly intialized jobkicker's jobqueue is empty passed")
 
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 }
 func TestKickOnceAfter(t *testing.T) {
 	jk := NewScheduler(nil, nil)
 
 	delay := time.Date(0, 0, 0, 0, 0, 3, 0, time.UTC)
 	jk.KickOnceAfter(delay, testingTask1)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize := len(jk.jobQueue.PendingJobs)
 	doneJobsSize := len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -43,11 +43,11 @@ func TestKickOnceAfter(t *testing.T) {
 	if doneJobsSize != 0 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 0, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("scheduling new job passed")
 
 	time.Sleep(4 * time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 0 {
@@ -56,7 +56,7 @@ func TestKickOnceAfter(t *testing.T) {
 	if doneJobsSize != 1 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("finishing scheduled job passed")
 
 }
@@ -66,7 +66,7 @@ func TestKickOnceAt(t *testing.T) {
 
 	runAt := time.Now().Add(3 * time.Second)
 	jk.KickOnceAt(runAt, testingTask1)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize := len(jk.jobQueue.PendingJobs)
 	doneJobsSize := len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -75,11 +75,11 @@ func TestKickOnceAt(t *testing.T) {
 	if doneJobsSize != 0 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 0, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("scheduling new job passed")
 
 	time.Sleep(4 * time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 0 {
@@ -88,7 +88,7 @@ func TestKickOnceAt(t *testing.T) {
 	if doneJobsSize != 1 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("finishing scheduled job passed")
 
 }
@@ -98,7 +98,7 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 
 	delay := time.Date(0, 0, 0, 0, 0, 3, 0, time.UTC)
 	jobID := jk.KickPeriodicallyEvery(delay, testingTask1)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize := len(jk.jobQueue.PendingJobs)
 	doneJobsSize := len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -107,11 +107,11 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 	if doneJobsSize != 0 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 0, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("scheduling new job passed")
 
 	time.Sleep(4 * time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -121,10 +121,10 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
 	}
 	firstFinishTime := jk.jobQueue.DoneJobs[jobID]
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 
 	time.Sleep(4 * time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -136,7 +136,7 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 	if firstFinishTime.Equal(jk.jobQueue.DoneJobs[jobID]) {
 		t.Errorf("Job's first running time and second running time are equal first:%v and second: %v", firstFinishTime, jk.jobQueue.DoneJobs[jobID])
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 
 	err := jk.CancelJob(jobID)
 	if err != nil {
@@ -146,7 +146,7 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 	// to allow locking it from cancel side to delete
 	// it from the pending jobs map
 	time.Sleep(time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 0 {
@@ -155,7 +155,7 @@ func TestKickPeriodicallyEvery(t *testing.T) {
 	if doneJobsSize != 1 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 
 	t.Log("finishing scheduled job passed")
 
@@ -166,7 +166,7 @@ func TestKickWithParams(t *testing.T) {
 
 	delay := time.Date(0, 0, 0, 0, 0, 3, 0, time.UTC)
 	jk.KickOnceAfter(delay, testingTaskWithParams, "Mohab", 25)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize := len(jk.jobQueue.PendingJobs)
 	doneJobsSize := len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 1 {
@@ -175,11 +175,11 @@ func TestKickWithParams(t *testing.T) {
 	if doneJobsSize != 0 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 0, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("scheduling new job with arguments passed")
 
 	time.Sleep(4 * time.Second)
-	jk.jobQueue.Lock()
+	jk.jobQueue.RLock()
 	pendingJobsSize = len(jk.jobQueue.PendingJobs)
 	doneJobsSize = len(jk.jobQueue.DoneJobs)
 	if pendingJobsSize != 0 {
@@ -188,6 +188,6 @@ func TestKickWithParams(t *testing.T) {
 	if doneJobsSize != 1 {
 		t.Errorf("jobkicker's donejobs should have size %d but found it's size %d", 1, doneJobsSize)
 	}
-	jk.jobQueue.Unlock()
+	jk.jobQueue.RUnlock()
 	t.Log("finishing scheduled job passed")
 }
