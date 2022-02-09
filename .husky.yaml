@@ -3,7 +3,7 @@ hooks:
   pre-commit:
     - golangci-lint run
     - husky lint-staged
-    - go test
+    - go test -run '/^[^(example)].*/'
 
 # list staged files do some pre-process and git add
 lint-staged:
